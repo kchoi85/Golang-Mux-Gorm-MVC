@@ -4,9 +4,7 @@ import (
 	"encoding/json"
 	"github.com/gorilla/mux"
 	m "kchoi85.io/rest-api/models"
-	"math/rand"
 	"net/http"
-	"strconv"
 )
 
 // Init books var as a slice Book struct
@@ -14,57 +12,57 @@ var Books []m.Book
 
 func GetBooks(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(Books)
+	var books []m.Book
+	m.DB.Find(&books)
+
+	json.NewEncoder(w).Encode(books)
 }
 
 func GetBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 
-	for _, item := range Books {
-		if item.ID == params["id"] {
-			json.NewEncoder(w).Encode(item)
-			return
-		}
-	}
-	json.NewEncoder(w).Encode(&m.Book{})
+	var book m.Book
+	m.DB.First(&book, params["id"])
+
+	var author m.Author
+	m.DB.First(&author, book.AuthorID)
+	book.Author = author
+
+	json.NewEncoder(w).Encode(book)
+
 }
 
 func CreateBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var book m.Book
+	var author m.Author
 	_ = json.NewDecoder(r.Body).Decode(&book)
-	book.ID = strconv.Itoa(rand.Intn(1000000))
-	Books = append(Books, book)
+	author = book.Author
+	m.DB.Create(&book)
+	m.DB.Create(&author)
+
 	json.NewEncoder(w).Encode(book)
 }
 
 func UpdateBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
-	for index, item := range Books {
-		if item.ID == params["id"] {
-			Books = append(Books[:index], Books[index+1:]...)
-			var book m.Book
-			_ = json.NewDecoder(r.Body).Decode(&book)
-			book.ID = strconv.Itoa(rand.Intn(1000000))
-			Books = append(Books, book)
-			json.NewEncoder(w).Encode(book)
-			return
-		}
-	}
-	json.NewEncoder(w).Encode(Books)
+
+	var book m.Book
+	m.DB.First(&book, params["id"])
+	_ = json.NewDecoder(r.Body).Decode(&book)
+	m.DB.Save(&book)
+
+	json.NewEncoder(w).Encode(book)
 }
 
 func DeleteBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 
-	for index, item := range Books {
-		if item.ID == params["id"] {
-			Books = append(Books[:index], Books[index+1:]...)
-			break
-		}
-	}
-	json.NewEncoder(w).Encode(Books)
+	var book m.Book
+	m.DB.Delete(&book, params["id"])
+
+	json.NewEncoder(w).Encode(book)
 }

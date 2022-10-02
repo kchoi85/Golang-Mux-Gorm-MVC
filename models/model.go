@@ -1,13 +1,21 @@
 package model
 
+import (
+	"gorm.io/gorm"
+)
+
 type Book struct {
-	ID     string  `json:"id"`
-	Isbn   string  `json:"isbn"`
-	Title  string  `json:"title"`
-	Author *Author `json:"author"`
+	gorm.Model
+	ID       int `gorm:"primaryKey"`
+	Isbn     string
+	Title    string
+	AuthorID uint `gorm:"foreignKey:AuthorID;references:ID"`
+	Author   Author
 }
 
 type Author struct {
-	Firstname string `json:"firstname"`
-	Lastname  string `json:"lastname"`
+	gorm.Model
+	ID        uint `gorm:"primaryKey"`
+	FirstName string
+	LastName  string
 }
